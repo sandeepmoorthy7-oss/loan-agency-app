@@ -39,15 +39,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     console.log("DEBUG: getProfile execution started", {
       id: sessionUser.id,
-      email: email,
-      rawEmail: rawEmail
+      email: email
     });
 
-    // 1. Database-driven Owner Check
-    // We check the 'users' table first. If the user is marked as 'owner' in the DB,
-    // that is the primary source of truth.
+    // 1. IMMEDIATE OWNER BYPASS (Source of truth for initial setup)
+    if (email === 'owner@gmail.com' || email === 'admin@tfs.com') {
+      console.log("DEBUG: Owner bypass triggered for:", email);
+      setIsPendingApproval(false);
+      return {
+        id: sessionUser.id,
+        email: sessionUser.email || email,
+        name: 'Gnanasekaran',
+        role: 'owner',
+        isApproved: true,
+        applicationStatus: 'approved'
+      };
+    }
 
     try {
+      console.log("DEBUG: Fetching from 'users' table...");
       // 2. Try to get profile from 'users' table
       const { data: profile, error: profileError } = await supabase
         .from('users')
@@ -55,30 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', sessionUser.id)
         .maybeSingle();
 
-      if (profile) {
-        console.log("DEBUG: Found profile in 'users' table", profile);
-        setIsPendingApproval(false);
-        return {
-          ...profile,
-          isApproved: true,
-          applicationStatus: 'approved'
-        };
-      }
-
-      // 3. Fallback for the very first setup (Owner bypass)
-      // This is ONLY for initial setup. You should add this user to the 'users' table.
-      if (email === 'owner@gmail.com' || email === 'admin@tfs.com') {
-        console.log("DEBUG: Initial setup owner detected:", email);
-        setIsPendingApproval(false);
-        return {
-          id: sessionUser.id,
-          email: sessionUser.email || email,
-          name: 'Gnanasekaran',
-          role: 'owner',
-          isApproved: true,
-          applicationStatus: 'approved'
-        };
-      }
 
       console.log("DEBUG: No profile in 'users' table, checking 'member_applications'");
 
