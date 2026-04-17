@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           id: sessionUser.id,
           email: sessionUser.email || email,
-          name: 'System Administrator',
+          name: 'Gnanasekaran',
           role: 'owner',
           isApproved: true,
           applicationStatus: 'approved'
