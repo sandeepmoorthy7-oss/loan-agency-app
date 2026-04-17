@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, Clock, CheckCircle2, XCircle, Coffee, User, L
 import { format } from 'date-fns';
 import { useIsMobile } from '../components/ui/use-mobile';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/utils';
 
 export function Attendance() {
   const { attendanceRecords, users, addAttendanceRecord, updateAttendanceRecord } = useData();
@@ -302,12 +302,6 @@ export function Attendance() {
                     );
                   })
                 )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-
               </TableBody>
             </Table>
             )}
