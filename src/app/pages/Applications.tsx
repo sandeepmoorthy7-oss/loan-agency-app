@@ -34,10 +34,11 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Plus, Search, Eye, Filter, Lock, Unlock, FileText, Upload, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { Plus, Search, Eye, Filter, Lock, Unlock, FileText, Upload, CheckCircle2, XCircle, ExternalLink, Calendar as CalendarIcon, Phone, Mail, IndianRupee } from "lucide-react";
 import { format } from "date-fns";
 import { BANKS, LOAN_TYPES } from "../constants";
 import { toast } from "sonner";
+import { useIsMobile } from "../components/ui/use-mobile";
 
 export function Applications() {
   const { currentUser } = useAuth();
@@ -50,6 +51,7 @@ export function Applications() {
     unlockApplication,
   } = useData();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<string>("all");
@@ -309,14 +311,14 @@ export function Applications() {
   const canUnlock = currentUser?.role === "owner";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Loan Applications
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+            Applications
           </h2>
-          <p className="text-gray-500">
-            Manage and track all loan applications
+          <p className="text-sm text-gray-500">
+            Track and manage loan requests
           </p>
         </div>
         {canCreateApplication && (
@@ -325,12 +327,12 @@ export function Applications() {
             onOpenChange={setIsCreateDialogOpen}
           >
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="size-4 mr-2" />
+              <Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 h-11 sm:h-10 text-base sm:text-sm">
+                <Plus className="size-5 sm:size-4 mr-2" />
                 New Application
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle>
                   Create Loan Application
@@ -574,43 +576,35 @@ export function Applications() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+      <Card className="border-none shadow-sm overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
               <Input
-                placeholder="Search by applicant name, ID, or bank..."
+                placeholder="Search by name, ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-11 sm:h-10 text-base sm:text-sm border-gray-100 focus:border-indigo-300"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="size-4 text-gray-400" />
               <Select
                 value={statusFilter}
                 onValueChange={setStatusFilter}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
+                <SelectTrigger className="w-full sm:w-[180px] h-11 sm:h-10 text-base sm:text-sm border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Filter className="size-4 text-gray-400" />
+                    <SelectValue placeholder="Status" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">
-                    All Status
-                  </SelectItem>
-                  <SelectItem value="pending">
-                    Pending
-                  </SelectItem>
-                  <SelectItem value="under_review">
-                    Under Review
-                  </SelectItem>
-                  <SelectItem value="approved">
-                    Approved
-                  </SelectItem>
-                  <SelectItem value="rejected">
-                    Rejected
-                  </SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="under_review">Review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -618,106 +612,113 @@ export function Applications() {
         </CardContent>
       </Card>
 
-      {/* Applications Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Applications ({filteredApplications.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+      {/* Applications Table/List */}
+      <div className="space-y-3">
+        {filteredApplications.length === 0 ? (
+          <Card className="p-8 text-center text-gray-500 border-dashed">
+            No applications found
+          </Card>
+        ) : isMobile ? (
+          // Mobile Card View
+          filteredApplications.map((app) => (
+            <Card
+              key={app.id}
+              className="border-none shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
+              onClick={() => {
+                setSelectedApp(app);
+                setIsViewDialogOpen(true);
+              }}
+            >
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">#{app.id.slice(0, 8)}</span>
+                      <Badge className={`${getStatusColor(app.status)} text-[9px] font-bold px-1.5 h-4 uppercase tracking-tighter border-0 shadow-none`}>
+                        {app.status.replace("_", " ")}
+                      </Badge>
+                    </div>
+                    <h3 className="font-bold text-gray-900 leading-none pt-1">{app.applicantName}</h3>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-indigo-600">₹{(app.loanAmount / 100000).toFixed(1)}L</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase">{app.loanType}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <CalendarIcon className="size-3 text-gray-400" />
+                      <span className="text-[10px] font-medium text-gray-500">{format(new Date(app.createdAt), "dd MMM")}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">BANK:</span>
+                      <span className="text-[10px] font-bold text-gray-700 truncate max-w-[80px]">{app.bank}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {checkLockStatus(app) ? (
+                       <Lock className="size-3 text-red-500" />
+                    ) : (
+                      <Unlock className="size-3 text-emerald-500" />
+                    )}
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">{app.createdByName.split(' ')[0]}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          // Desktop Table View
+          <Card className="border-none shadow-sm overflow-hidden">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-gray-50/50">
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Lock Status</TableHead>
+                  <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Applicant</TableHead>
-                  <TableHead>Loan Type</TableHead>
-                  <TableHead>Bank</TableHead>
+                  <TableHead>Details</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Created By</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredApplications.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={10}
-                      className="text-center text-gray-500 py-8"
-                    >
-                      No applications found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredApplications.map((app) => {
-                    const isLocked = checkLockStatus(app);
-                    const daysRemaining = getDaysRemaining(app.lockedUntil);
-                    
-                    return (
-                    <TableRow key={app.id}>
-                      <TableCell className="font-mono text-sm">
-                        {app.id}
-                      </TableCell>
+                {filteredApplications.map((app) => {
+                  const isLocked = checkLockStatus(app);
+                  return (
+                    <TableRow key={app.id} className="hover:bg-gray-50/50 transition-colors">
+                      <TableCell className="font-mono text-xs text-gray-500">#{app.id.slice(0, 8)}</TableCell>
                       <TableCell>
-                        {isLocked ? (
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 px-2 py-1 bg-red-100 border-2 border-red-500 rounded-md">
-                              <Lock className="size-4 text-red-600" />
-                              <span className="text-xs font-bold text-red-700">
-                                LOCKED
-                              </span>
-                            </div>
-                            <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
-                              {daysRemaining}d left
-                            </Badge>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{app.applicantName}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-medium text-gray-500">{app.applicantPhone}</span>
+                            {isLocked ? <Lock className="size-3 text-red-500" /> : <Unlock className="size-3 text-emerald-500" />}
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-green-100 border-2 border-green-500 rounded-md">
-                            <Unlock className="size-4 text-green-600" />
-                            <span className="text-xs font-bold text-green-700">
-                              UNLOCKED
-                            </span>
-                          </div>
-                        )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="text-sm">
-                            {app.applicantName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {app.applicantEmail}
-                          </p>
+                          <p className="text-xs font-semibold text-gray-700">{app.loanType}</p>
+                          <p className="text-[10px] text-gray-400 uppercase font-bold">{app.bank}</p>
                         </div>
                       </TableCell>
-                      <TableCell>{app.loanType}</TableCell>
-                      <TableCell>{app.bank}</TableCell>
                       <TableCell>
-                        ₹{(app.loanAmount / 100000).toFixed(1)}L
+                        <span className="text-sm font-black text-indigo-600">₹{(app.loanAmount / 100000).toFixed(1)}L</span>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          className={getStatusColor(app.status)}
-                          variant="secondary"
-                        >
+                        <Badge className={`${getStatusColor(app.status)} text-[10px] font-bold border-0`}>
                           {app.status.replace("_", " ")}
                         </Badge>
                       </TableCell>
-                      <TableCell>{app.createdByName}</TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {format(
-                          new Date(app.createdAt),
-                          "MMM dd, yyyy",
-                        )}
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="text-xs text-gray-500">{format(new Date(app.createdAt), "MMM dd, yyyy")}</TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="size-8"
                           onClick={() => {
                             setSelectedApp(app);
                             setIsViewDialogOpen(true);
@@ -727,279 +728,278 @@ export function Applications() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                    );
-                  })
-                )}
+                  );
+                })}
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-      </Card>
+          </Card>
+        )}
+      </div>
 
       {/* View/Edit Dialog */}
       <Dialog
         open={isViewDialogOpen}
         onOpenChange={setIsViewDialogOpen}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Application Details - {selectedApp?.id}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-0 rounded-2xl border-none">
+          <div className="bg-white sticky top-0 z-10 p-4 border-b flex justify-between items-center">
+            <div className="flex items-center gap-3">
+               <div className={`p-2 rounded-xl ${selectedApp ? getStatusColor(selectedApp.status).replace('bg-gradient-to-r', 'bg-opacity-10') : 'bg-gray-100'}`}>
+                <FileText className="size-5 text-indigo-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold">Application Details</DialogTitle>
+                <p className="text-[10px] font-mono text-gray-400 uppercase">ID: {selectedApp?.id}</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => setIsViewDialogOpen(false)}>
+              <XCircle className="size-5 text-gray-400" />
+            </Button>
+          </div>
 
           {selectedApp && (
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="details">Information</TabsTrigger>
-                <TabsTrigger value="documents">
-                  Documents
-                  {selectedApp.documents && (
-                    <Badge variant="secondary" className="ml-2 bg-indigo-100">
-                      {selectedApp.documents.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
+            <div className="p-4 sm:p-6 space-y-6">
+              <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-xl h-11">
+                  <TabsTrigger value="details" className="rounded-lg text-xs font-bold uppercase tracking-wider">Info</TabsTrigger>
+                  <TabsTrigger value="documents" className="rounded-lg text-xs font-bold uppercase tracking-wider">
+                    Docs
+                    {selectedApp.documents && (
+                      <span className="ml-2 bg-white text-indigo-600 px-1.5 rounded-full text-[10px]">
+                        {selectedApp.documents.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
-                {/* Existing details content */}
-                <div className="space-y-4">
-                  {/* Lock Status Banner */}
-                  {checkLockStatus(selectedApp) ? (
-                    <div className="p-4 bg-red-50 border-2 border-red-500 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Lock className="size-6 text-red-600 mt-0.5" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-red-900">🔒 APPLICATION LOCKED</h4>
-                            <Badge className="bg-red-600 text-white">
-                              {getDaysRemaining(selectedApp.lockedUntil)} days remaining
-                            </Badge>
+                <TabsContent value="details" className="space-y-5 pt-4">
+                  {/* Status Banner */}
+                  <div className={`p-4 rounded-xl border-2 flex items-start gap-3 ${checkLockStatus(selectedApp) ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                    {checkLockStatus(selectedApp) ? <Lock className="size-5 text-red-600 shrink-0" /> : <Unlock className="size-5 text-emerald-600 shrink-0" />}
+                    <div>
+                      <p className={`text-xs font-bold uppercase tracking-tight ${checkLockStatus(selectedApp) ? 'text-red-700' : 'text-emerald-700'}`}>
+                        {checkLockStatus(selectedApp) ? `LOCKED (${getDaysRemaining(selectedApp.lockedUntil)} days left)` : 'OPEN APPLICATION'}
+                      </p>
+                      <p className={`text-[11px] mt-0.5 ${checkLockStatus(selectedApp) ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {checkLockStatus(selectedApp)
+                          ? `Only ${selectedApp.createdByName} can edit this application.`
+                          : "This application is available for processing."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Primary Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-50">
+                      <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Applicant Profile</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="size-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xs">
+                            {selectedApp.applicantName.slice(0, 1)}
                           </div>
-                          <p className="text-sm text-red-700 mt-1">
-                            This application is locked to {selectedApp.createdByName} until{' '}
-                            {selectedApp.lockedUntil && format(new Date(selectedApp.lockedUntil), 'PPP')}
-                          </p>
+                          <span className="font-bold text-gray-900">{selectedApp.applicantName}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Phone className="size-3 text-gray-400" />
+                          <span>{selectedApp.applicantPhone}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Mail className="size-3 text-gray-400" />
+                          <span className="truncate">{selectedApp.applicantEmail}</span>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="p-4 bg-green-50 border-2 border-green-500 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Unlock className="size-6 text-green-600 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-bold text-green-900">🔓 APPLICATION UNLOCKED</h4>
-                          <p className="text-sm text-green-700 mt-1">
-                            This application is available for all sales team members.
-                          </p>
+
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-50">
+                      <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Loan Summary</Label>
+                      <div className="space-y-3">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-black text-indigo-600">₹{selectedApp.loanAmount.toLocaleString("en-IN")}</span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="bg-white text-gray-600 font-bold text-[10px] uppercase border-gray-200">{selectedApp.loanType}</Badge>
+                          <Badge variant="outline" className="bg-white text-indigo-600 font-bold text-[10px] uppercase border-indigo-100">{selectedApp.bank}</Badge>
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <div>
-                      <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Applicant</Label>
-                      <p className="text-base font-semibold text-gray-900">{selectedApp.applicantName}</p>
-                      <p className="text-xs text-gray-500">{selectedApp.applicantEmail}</p>
-                      <p className="text-xs text-gray-500">{selectedApp.applicantPhone}</p>
+                  {/* Purpose */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Case Description</Label>
+                    <div className="bg-gray-50/50 p-4 rounded-2xl text-sm text-gray-700 leading-relaxed border border-gray-50 italic">
+                      "{selectedApp.purpose}"
                     </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Loan Details</Label>
-                      <p className="text-base font-semibold text-indigo-700">₹{selectedApp.loanAmount.toLocaleString("en-IN")}</p>
-                      <p className="text-xs text-gray-500 font-medium">{selectedApp.loanType}</p>
+                  </div>
+
+                  {/* Timeline & Assignment */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigned Staff</Label>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <div className="size-1.5 bg-blue-500 rounded-full"></div>
+                          <span className="text-xs font-bold text-gray-700 truncate">{selectedApp.backendAssignedName || "Unassigned"} (Back)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="size-1.5 bg-orange-500 rounded-full"></div>
+                          <span className="text-xs font-bold text-gray-700 truncate">{selectedApp.bankEmployeeName || "Unassigned"} (Bank)</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Current Status</Label>
-                      <div className="mt-1">
-                        <Badge className={`${getStatusColor(selectedApp.status)} shadow-sm`}>
-                          {selectedApp.status.replace("_", " ").toUpperCase()}
-                        </Badge>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Important Dates</Label>
+                      <div className="flex flex-col gap-1 text-[11px] text-gray-500 font-medium">
+                        <p>Opened: {format(new Date(selectedApp.createdAt), 'MMM d, yyyy')}</p>
+                        <p>Updated: {format(new Date(selectedApp.updatedAt), 'MMM d, yyyy')}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-2">
-                    <div>
-                      <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Bank Assignment</Label>
-                      <p className="text-sm font-semibold text-gray-800">{selectedApp.bank}</p>
-                      <p className="text-xs text-gray-600">Employee: {selectedApp.bankEmployeeName || "Unassigned"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Internal Assignment</Label>
-                      <p className="text-sm font-semibold text-gray-800">Sales: {selectedApp.createdByName}</p>
-                      <p className="text-xs text-gray-600">Backend: {selectedApp.backendAssignedName || "Unassigned"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Timeline</Label>
-                      <p className="text-xs text-gray-600">Created: {format(new Date(selectedApp.createdAt), 'MMM d, yyyy')}</p>
-                      <p className="text-xs text-gray-600">Updated: {format(new Date(selectedApp.updatedAt), 'MMM d, yyyy')}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg border">
-                    <Label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Purpose</Label>
-                    <p className="text-sm text-gray-700 mt-1 leading-relaxed">{selectedApp.purpose}</p>
-                  </div>
-
-                  {/* Owner Unlock Button */}
-                  {canUnlock && checkLockStatus(selectedApp) && (
-                    <div className="pt-4 border-t">
-                      <Label className="text-sm mb-2 block text-orange-700">🔓 Owner Controls</Label>
-                      <Button
-                        onClick={() => handleUnlock(selectedApp.id)}
-                        className="bg-orange-600 hover:bg-orange-700 text-white"
-                      >
-                        <Unlock className="size-4 mr-2" />
-                        Unlock Application (Override 15-Day Lock)
-                      </Button>
-                    </div>
-                  )}
-
-                  {canUpdateStatus && (
-                    <div className="pt-4 border-t">
-                      <Label className="text-sm font-bold mb-3 block">Application Actions</Label>
-                      <div className="flex flex-wrap gap-2">
+                  {/* Actions */}
+                  {(canUpdateStatus || (canUnlock && checkLockStatus(selectedApp))) && (
+                    <div className="pt-4 border-t space-y-4">
+                       {canUnlock && checkLockStatus(selectedApp) && (
                         <Button
-                          size="sm"
-                          variant={selectedApp.status === "pending" ? "default" : "outline"}
-                          onClick={() => handleUpdateStatus(selectedApp.id, "pending")}
+                          onClick={() => handleUnlock(selectedApp.id)}
+                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-orange-100"
                         >
-                          Pending
+                          <Unlock className="size-4 mr-2" />
+                          ADMIN: FORCE UNLOCK
                         </Button>
-                        <Button
-                          size="sm"
-                          variant={selectedApp.status === "under_review" ? "default" : "outline"}
-                          onClick={() => handleUpdateStatus(selectedApp.id, "under_review")}
-                        >
-                          Under Review
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUpdateStatus(selectedApp.id, "approved")}
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUpdateStatus(selectedApp.id, "rejected")}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="documents" className="pt-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Verification Documents</h3>
-                  {(currentUser?.role === 'sales' || currentUser?.role === 'backend') && (
-                    <Button size="sm" onClick={handleUploadDocument} className="bg-indigo-600">
-                      <Upload className="size-4 mr-2" />
-                      Upload Document
-                    </Button>
-                  )}
-                </div>
-
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-gray-50">
-                      <TableRow>
-                        <TableHead>Document Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Uploaded By</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {!selectedApp.documents || selectedApp.documents.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                            No documents uploaded yet.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        selectedApp.documents.map((doc) => (
-                          <TableRow key={doc.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <FileText className="size-4 text-indigo-500" />
-                                <span className="font-medium text-sm">{doc.name}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={
-                                doc.status === 'verified' ? 'text-green-700 bg-green-50 border-green-200' :
-                                doc.status === 'rejected' ? 'text-red-700 bg-red-50 border-red-200' :
-                                'text-yellow-700 bg-yellow-50 border-yellow-200'
-                              }>
-                                {doc.status.toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {users.find(u => u.id === doc.uploadedBy)?.name || doc.uploadedBy}
-                            </TableCell>
-                            <TableCell className="text-xs text-gray-500">
-                              {format(new Date(doc.uploadedAt), 'MMM d, yyyy')}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="size-8">
-                                  <ExternalLink className="size-4" />
-                                </Button>
-                                {(currentUser?.role === 'backend' || currentUser?.role === 'bank_manager') && doc.status === 'pending' && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="size-8 text-green-600 hover:text-green-700"
-                                      onClick={() => handleUpdateDocumentStatus(doc.id, 'verified')}
-                                    >
-                                      <CheckCircle2 className="size-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="size-8 text-red-600 hover:text-red-700"
-                                      onClick={() => handleUpdateDocumentStatus(doc.id, 'rejected')}
-                                    >
-                                      <XCircle className="size-4" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex gap-3">
-                  <div className="bg-blue-100 p-2 rounded-full h-fit">
-                    <FileText className="size-5 text-blue-600" />
+                      {canUpdateStatus && (
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center block">Change Application Status</Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <Button
+                              variant={selectedApp.status === "pending" ? "default" : "outline"}
+                              size="sm"
+                              className={`h-11 rounded-xl font-bold text-xs uppercase ${selectedApp.status === 'pending' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
+                              onClick={() => handleUpdateStatus(selectedApp.id, "pending")}
+                            >
+                              Pending
+                            </Button>
+                            <Button
+                              variant={selectedApp.status === "under_review" ? "default" : "outline"}
+                              size="sm"
+                              className={`h-11 rounded-xl font-bold text-xs uppercase ${selectedApp.status === 'under_review' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                              onClick={() => handleUpdateStatus(selectedApp.id, "under_review")}
+                            >
+                              In Review
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-11 rounded-xl font-bold text-xs uppercase text-emerald-600 border-emerald-100 hover:bg-emerald-50"
+                              onClick={() => handleUpdateStatus(selectedApp.id, "approved")}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-11 rounded-xl font-bold text-xs uppercase text-red-600 border-red-100 hover:bg-red-50"
+                              onClick={() => handleUpdateStatus(selectedApp.id, "rejected")}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="documents" className="pt-4 space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">Required Documents</h3>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Verification Progress</p>
+                    </div>
+                    {(currentUser?.role === 'sales' || currentUser?.role === 'backend') && (
+                      <Button size="sm" onClick={handleUploadDocument} className="bg-indigo-600 h-9 rounded-lg">
+                        <Upload className="size-4 mr-2" />
+                        Add New
+                      </Button>
+                    )}
                   </div>
-                  <div className="text-sm">
-                    <p className="font-semibold text-blue-900">Document Checklist</p>
-                    <ul className="list-disc list-inside text-blue-700 mt-1 space-y-1">
-                      <li>PAN Card & Aadhaar Card</li>
-                      <li>Last 6 months Bank Statement</li>
-                      <li>Salary Slips (3 months) / ITR (2 years)</li>
-                      <li>Address Proof (Voter ID/Utility Bill)</li>
-                    </ul>
+
+                  <div className="space-y-2">
+                    {!selectedApp.documents || selectedApp.documents.length === 0 ? (
+                      <div className="p-12 text-center bg-gray-50 rounded-2xl border border-dashed flex flex-col items-center">
+                        <FileText className="size-8 text-gray-200 mb-2" />
+                        <p className="text-xs font-bold text-gray-400 uppercase">No documents attached</p>
+                      </div>
+                    ) : (
+                      selectedApp.documents.map((doc) => (
+                        <div key={doc.id} className="p-3 bg-white border border-gray-100 rounded-xl flex items-center justify-between shadow-sm">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="size-9 bg-gray-50 rounded-lg flex items-center justify-center shrink-0">
+                              <FileText className="size-5 text-indigo-500" />
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-xs font-bold text-gray-800 truncate">{doc.name}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <Badge variant="outline" className={`text-[8px] h-3.5 px-1 font-black uppercase border-0 ${
+                                  doc.status === 'verified' ? 'text-emerald-600 bg-emerald-50' :
+                                  doc.status === 'rejected' ? 'text-red-600 bg-red-50' :
+                                  'text-amber-600 bg-amber-50'
+                                }`}>
+                                  {doc.status}
+                                </Badge>
+                                <span className="text-[9px] text-gray-400 font-medium">Added {format(new Date(doc.uploadedAt), 'MMM d')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 ml-2">
+                            <Button variant="ghost" size="icon" className="size-8 rounded-lg">
+                              <ExternalLink className="size-4 text-gray-400" />
+                            </Button>
+                            {(currentUser?.role === 'backend' || currentUser?.role === 'bank_manager') && doc.status === 'pending' && (
+                              <div className="flex items-center gap-1 border-l pl-1 ml-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-emerald-600 hover:bg-emerald-50"
+                                  onClick={() => handleUpdateDocumentStatus(doc.id, 'verified')}
+                                >
+                                  <CheckCircle2 className="size-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-red-600 hover:bg-red-50"
+                                  onClick={() => handleUpdateDocumentStatus(doc.id, 'rejected')}
+                                >
+                                  <XCircle className="size-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+
+                  <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100/50">
+                    <div className="flex gap-3">
+                      <div className="bg-indigo-600 p-2 rounded-xl shrink-0 h-fit">
+                        <CheckCircle2 className="size-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-indigo-900 uppercase tracking-widest">Document Requirements</p>
+                        <p className="text-[11px] text-indigo-700 mt-1 leading-relaxed">
+                          Please ensure all documents are clear and original. Standard files include: PAN, Aadhaar, 6m Statements, and 3m Salary slips.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           )}
         </DialogContent>
       </Dialog>

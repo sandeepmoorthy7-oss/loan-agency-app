@@ -12,10 +12,12 @@ import { toast } from "sonner";
 import { BANKS } from "../constants";
 import { UserRole } from "../types";
 import { supabase } from "../../supabase";
+import { useIsMobile } from "../components/ui/use-mobile";
 
 export function Signup() {
   const navigate = useNavigate();
   const { submitUserApplication } = useData();
+  const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -123,32 +125,45 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/login")}
-            className="mb-4"
-          >
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Login
-          </Button>
-        </div>
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center ${isMobile ? 'p-0' : 'p-4'}`}>
+      <div className={`w-full max-w-2xl ${isMobile ? 'min-h-screen flex flex-col' : ''}`}>
+        {!isMobile && (
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/login")}
+              className="mb-4"
+            >
+              <ArrowLeft className="size-4 mr-2" />
+              Back to Login
+            </Button>
+          </div>
+        )}
 
-        <Card className="shadow-xl">
-          <CardHeader className="space-y-1">
+        <Card className={`shadow-xl ${isMobile ? 'flex-1 rounded-none border-none' : ''}`}>
+          <CardHeader className={`${isMobile ? 'pt-8' : ''} space-y-1`}>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/login")}
+                className="w-fit mb-2 -ml-2"
+              >
+                <ArrowLeft className="size-4 mr-2" />
+                Login
+              </Button>
+            )}
             <div className="flex items-center gap-2">
               <UserPlus className="size-6 text-indigo-600" />
-              <CardTitle className="text-2xl">Join TFS Management</CardTitle>
+              <CardTitle className={isMobile ? 'text-xl' : 'text-2xl'}>Join TFS Management</CardTitle>
             </div>
             <CardDescription>
               Submit your application to join our team. Your application will be reviewed by the admin.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className={isMobile ? 'pb-10' : ''}>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name *</Label>
                   <Input
@@ -157,6 +172,7 @@ export function Signup() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="John Doe"
                     required
+                    className={isMobile ? 'h-12' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -168,11 +184,12 @@ export function Signup() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="john@example.com"
                     required
+                    className={isMobile ? 'h-12' : ''}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number *</Label>
                   <Input
@@ -182,6 +199,7 @@ export function Signup() {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91 98765 43210"
                     required
+                    className={isMobile ? 'h-12' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -190,7 +208,7 @@ export function Signup() {
                     value={formData.requestedRole}
                     onValueChange={(val) => setFormData({ ...formData, requestedRole: val as UserRole })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={isMobile ? 'h-12' : ''}>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -209,7 +227,7 @@ export function Signup() {
                     value={formData.bankId}
                     onValueChange={(val) => setFormData({ ...formData, bankId: val })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={isMobile ? 'h-12' : ''}>
                       <SelectValue placeholder="Select bank" />
                     </SelectTrigger>
                     <SelectContent>
@@ -230,10 +248,11 @@ export function Signup() {
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   placeholder="e.g., Retail Loans, Commercial Banking"
+                  className={isMobile ? 'h-12' : ''}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password *</Label>
                   <Input
@@ -243,6 +262,7 @@ export function Signup() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Min. 6 characters"
                     required
+                    className={isMobile ? 'h-12' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -254,6 +274,7 @@ export function Signup() {
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     placeholder="Re-enter password"
                     required
+                    className={isMobile ? 'h-12' : ''}
                   />
                 </div>
               </div>
@@ -264,31 +285,31 @@ export function Signup() {
                   id="reason"
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  placeholder="Tell us about your experience and why you want to join our team..."
-                  rows={4}
+                  placeholder="Tell us about your experience..."
+                  rows={isMobile ? 3 : 4}
                   required
                 />
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <p className="text-sm text-amber-800">
-                  <strong>Note:</strong> Your application will be reviewed by the admin/owner. 
-                  You will be able to log in only after your application is approved.
+                  <strong>Note:</strong> Your application will be reviewed by the admin.
+                  You will be able to log in after approval.
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className={`flex ${isMobile ? 'flex-col-reverse' : 'gap-3'}`}>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/login")}
-                  className="flex-1"
+                  className={`flex-1 ${isMobile ? 'mt-3 h-12' : ''}`}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1"
+                  className={`flex-1 ${isMobile ? 'h-12 font-bold' : ''}`}
                   disabled={isLoading}
                 >
                   {isLoading ? (

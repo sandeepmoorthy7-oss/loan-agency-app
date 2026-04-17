@@ -10,16 +10,19 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { MessageSquare, Plus, Send, Mail, MailOpen } from 'lucide-react';
+import { MessageSquare, Plus, Send, Mail, MailOpen, User, XCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useIsMobile } from '../components/ui/use-mobile';
 
 export function Messages() {
   const [isSending, setIsSending] = useState(false);
   const { currentUser } = useAuth();
   const { messages, addMessage, markMessageAsRead, users } = useData();
+  const isMobile = useIsMobile();
   const [isComposeDialogOpen, setIsComposeDialogOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     to: '',
     subject: '',
@@ -28,36 +31,39 @@ export function Messages() {
 
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
 
-  const receivedMessages = messages.filter((msg) => msg.to === currentUser?.id);
-  const sentMessages = messages.filter((msg) => msg.from === currentUser?.id);
-  const unreadCount = receivedMessages.filter((msg) => !msg.read).length;
+  const receivedMessages = messages.filter((msg) => msg.to === currentUser?.id)
+    .filter(msg =>
+      msg.fromName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      msg.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  const sentMessages = messages.filter((msg) => msg.from === currentUser?.id)
+    .filter(msg =>
+      msg.toName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      msg.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  const unreadCount = messages.filter((msg) => msg.to === currentUser?.id && !msg.read).length;
 
   const handleComposeMessage = async () => {
-    console.log('DEBUG: handleComposeMessage start');
     if (!currentUser) {
-      console.log('DEBUG: No currentUser');
       toast.error('You must be logged in to send messages');
       return;
     }
 
-    console.log('DEBUG: Form data:', formData);
     if (!formData.to || !formData.subject || !formData.content) {
-      console.log('DEBUG: Missing fields');
       toast.error('Please fill in all required fields');
       return;
     }
 
     const recipient = users.find((u) => u.id === formData.to);
-    console.log('DEBUG: Recipient:', recipient);
     if (!recipient) {
-      console.log('DEBUG: Recipient not found in users list', users);
       toast.error('Recipient not found');
       return;
     }
 
     setIsSending(true);
     try {
-      console.log('DEBUG: Sending message from', currentUser.id, 'to', formData.to);
       await addMessage({
         from: currentUser.id,
         fromName: currentUser.name,
@@ -68,7 +74,6 @@ export function Messages() {
         read: false,
       });
 
-      console.log('DEBUG: addMessage success');
       toast.success('Message sent successfully!');
       setIsComposeDialogOpen(false);
       setFormData({
@@ -77,15 +82,13 @@ export function Messages() {
         content: '',
       });
     } catch (error: any) {
-      console.error('DEBUG: Failed to send message caught in UI:', error);
-      toast.error(error.message || 'Failed to send message. Please try again.');
+      toast.error(error.message || 'Failed to send message.');
     } finally {
       setIsSending(false);
     }
   };
 
   const handleViewMessage = (messageId: string) => {
-    console.log('Viewing message:', messageId);
     setSelectedMessage(messageId);
     const message = messages.find((m) => m.id === messageId);
     if (message && message.to === currentUser?.id && !message.read) {
@@ -96,243 +99,283 @@ export function Messages() {
   const selectedMessageData = messages.find((m) => m.id === selectedMessage);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 rounded-2xl p-8 text-white shadow-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <MessageSquare className="size-8" />
-              Messages
-            </h2>
-            <p className="text-white/90 text-lg">Inter-employee communication</p>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            Messages
             {unreadCount > 0 && (
-              <Badge className="mt-2 bg-white text-blue-600 font-semibold">
-                {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
+              <Badge variant="destructive" className="h-5 px-1.5 text-[10px] font-black">
+                {unreadCount} NEW
               </Badge>
             )}
-          </div>
-          <Dialog open={isComposeDialogOpen} onOpenChange={setIsComposeDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-white text-blue-600 hover:bg-white/90">
-                <Plus className="size-4 mr-2" />
-                Compose Message
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Compose New Message</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="to">To *</Label>
-                  <Select value={formData.to} onValueChange={(val) => setFormData({ ...formData, to: val })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select recipient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {otherUsers.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.name} ({user.role})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject *</Label>
-                  <Input
-                    id="subject"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder="Enter message subject"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="content">Message *</Label>
-                  <Textarea
-                    id="content"
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Enter your message"
-                    rows={6}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsComposeDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleComposeMessage}
-                    disabled={!formData.to || !formData.subject || !formData.content || isSending}
-                  >
-                    {isSending ? (
-                      <div className="size-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    ) : (
-                      <Send className="size-4 mr-2" />
-                    )}
-                    {isSending ? 'Sending...' : 'Send Message'}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          </h2>
+          <p className="text-sm text-gray-500">Internal communication portal</p>
         </div>
+
+        <Dialog open={isComposeDialogOpen} onOpenChange={setIsComposeDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 h-11 sm:h-10">
+              <Plus className="size-5 sm:size-4 mr-2" />
+              Compose Message
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl w-[95vw] p-4 sm:p-6 rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>New Message</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recipient</Label>
+                <Select value={formData.to} onValueChange={(val) => setFormData({ ...formData, to: val })}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="Choose colleague" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {otherUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name} ({user.role.replace('_', ' ')})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subject</Label>
+                <Input
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  placeholder="What is this about?"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Message Body</Label>
+                <Textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  placeholder="Type your message here..."
+                  rows={isMobile ? 8 : 6}
+                  className="rounded-xl resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+                <Button variant="ghost" className="h-11 sm:h-10 font-bold text-gray-500" onClick={() => setIsComposeDialogOpen(false)}>
+                  Discard
+                </Button>
+                <Button
+                  className="h-11 sm:h-10 bg-indigo-600 font-bold"
+                  onClick={handleComposeMessage}
+                  disabled={!formData.to || !formData.subject || !formData.content || isSending}
+                >
+                  {isSending ? (
+                    <div className="size-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <Send className="size-4 mr-2" />
+                  )}
+                  Send Message
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Inbox</CardTitle>
-            <Mail className="size-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{receivedMessages.length}</div>
-            <p className="text-xs text-gray-500">{unreadCount} unread</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Sent</CardTitle>
-            <Send className="size-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{sentMessages.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Unread</CardTitle>
-            <MailOpen className="size-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl text-red-600">{unreadCount}</div>
-          </CardContent>
-        </Card>
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+        <Input
+          placeholder="Search by name or subject..."
+          className="pl-9 h-11 border-none shadow-sm bg-white rounded-xl"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      {/* Messages Tabs */}
-      <Card>
-        <Tabs defaultValue="inbox">
-          <CardHeader>
-            <TabsList>
-              <TabsTrigger value="inbox" className="flex items-center gap-2">
-                <Mail className="size-4" />
-                Inbox
-                {unreadCount > 0 && (
-                  <Badge variant="destructive" className="ml-1">
-                    {unreadCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="sent" className="flex items-center gap-2">
-                <Send className="size-4" />
-                Sent
-              </TabsTrigger>
-            </TabsList>
-          </CardHeader>
-          <CardContent>
-            <TabsContent value="inbox" className="mt-0">
-              <div className="space-y-2">
-                {receivedMessages.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageSquare className="size-12 text-gray-300 mx-auto mb-4" />
-                    <p>No messages in your inbox</p>
-                  </div>
-                ) : (
-                  receivedMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                        !message.read ? 'bg-blue-50 border-blue-200' : 'bg-white'
-                      }`}
-                      onClick={() => handleViewMessage(message.id)}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {!message.read && <div className="size-2 bg-blue-600 rounded-full" />}
-                            <p className={`text-sm ${!message.read ? 'font-semibold' : ''}`}>
-                              {message.fromName}
-                            </p>
-                            <span className="text-xs text-gray-500">
-                              {format(new Date(message.timestamp), 'MMM dd, yyyy HH:mm')}
-                            </span>
-                          </div>
-                          <p className={`text-sm ${!message.read ? 'font-semibold' : ''}`}>
-                            {message.subject}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{message.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
+      {/* Stats - Compact on Mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3">
+          <div className="size-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+            <Mail className="size-5" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase">Inbox</p>
+            <p className="text-xl font-black text-gray-900">{receivedMessages.length}</p>
+          </div>
+        </div>
 
-            <TabsContent value="sent" className="mt-0">
-              <div className="space-y-2">
-                {sentMessages.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageSquare className="size-12 text-gray-300 mx-auto mb-4" />
-                    <p>No sent messages</p>
-                  </div>
-                ) : (
-                  sentMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                      onClick={() => handleViewMessage(message.id)}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm">To: {message.toName}</p>
-                            <span className="text-xs text-gray-500">
-                              {format(new Date(message.timestamp), 'MMM dd, yyyy HH:mm')}
-                            </span>
-                          </div>
-                          <p className="text-sm">{message.subject}</p>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{message.content}</p>
-                        </div>
-                      </div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3">
+          <div className="size-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+            <Send className="size-5" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase">Sent</p>
+            <p className="text-xl font-black text-gray-900">{sentMessages.length}</p>
+          </div>
+        </div>
+
+        {!isMobile && (
+          <div className="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3">
+            <div className="size-10 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
+              <MailOpen className="size-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase">Unread</p>
+              <p className="text-xl font-black text-red-600">{unreadCount}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Content Tabs */}
+      <Tabs defaultValue="inbox" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-200/50 p-1 rounded-xl h-12 mb-4">
+          <TabsTrigger value="inbox" className="rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+            <Mail className="size-4" />
+            Received
+          </TabsTrigger>
+          <TabsTrigger value="sent" className="rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+            <Send className="size-4" />
+            Outbox
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inbox" className="mt-0 space-y-3">
+          {receivedMessages.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed flex flex-col items-center">
+              <MessageSquare className="size-12 text-gray-100 mb-4" />
+              <p className="text-sm font-bold text-gray-400 uppercase">No messages found</p>
+            </div>
+          ) : (
+            receivedMessages.map((message) => (
+              <Card
+                key={message.id}
+                className={`border-none shadow-sm active:scale-[0.98] transition-all cursor-pointer rounded-2xl overflow-hidden ${
+                  !message.read ? 'ring-2 ring-indigo-500/20' : ''
+                }`}
+                onClick={() => handleViewMessage(message.id)}
+              >
+                <CardContent className="p-4 flex gap-4">
+                   <div className="shrink-0">
+                    <div className={`size-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                      !message.read ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {message.fromName.charAt(0)}
                     </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-          </CardContent>
-        </Tabs>
-      </Card>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <p className={`text-sm truncate ${!message.read ? 'font-black text-gray-900' : 'font-semibold text-gray-600'}`}>
+                        {message.fromName}
+                      </p>
+                      <span className="text-[10px] font-medium text-gray-400 shrink-0">
+                        {format(new Date(message.timestamp), isMobile ? 'HH:mm' : 'MMM dd, HH:mm')}
+                      </span>
+                    </div>
+                    <p className={`text-sm truncate mt-0.5 ${!message.read ? 'font-bold text-indigo-600' : 'text-gray-700'}`}>
+                      {message.subject}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-1 italic">
+                      {message.content}
+                    </p>
+                  </div>
+                  {!message.read && (
+                    <div className="shrink-0 flex items-center">
+                      <div className="size-2 bg-indigo-600 rounded-full animate-pulse" />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="sent" className="mt-0 space-y-3">
+          {sentMessages.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed flex flex-col items-center">
+              <Send className="size-12 text-gray-100 mb-4" />
+              <p className="text-sm font-bold text-gray-400 uppercase">No sent messages</p>
+            </div>
+          ) : (
+            sentMessages.map((message) => (
+              <Card
+                key={message.id}
+                className="border-none shadow-sm active:scale-[0.98] transition-all cursor-pointer rounded-2xl overflow-hidden"
+                onClick={() => handleViewMessage(message.id)}
+              >
+                <CardContent className="p-4 flex gap-4">
+                  <div className="shrink-0">
+                    <div className="size-10 bg-gray-50 rounded-full flex items-center justify-center font-bold text-sm text-gray-400">
+                      To
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-bold text-gray-900 truncate">
+                        {message.toName}
+                      </p>
+                      <span className="text-[10px] font-medium text-gray-400 shrink-0">
+                        {format(new Date(message.timestamp), isMobile ? 'HH:mm' : 'MMM dd, HH:mm')}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700 truncate mt-0.5">
+                      {message.subject}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-1 italic">
+                      {message.content}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Message View Dialog */}
       <Dialog open={!!selectedMessage} onOpenChange={() => setSelectedMessage(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedMessageData?.subject}</DialogTitle>
-          </DialogHeader>
-          {selectedMessageData && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b">
-                <div>
-                  <p className="text-sm">
-                    <span className="text-gray-500">From:</span> {selectedMessageData.fromName}
-                  </p>
-                  <p className="text-sm">
-                    <span className="text-gray-500">To:</span> {selectedMessageData.toName}
-                  </p>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {format(new Date(selectedMessageData.timestamp), 'PPP, p')}
-                </p>
+        <DialogContent className="max-w-2xl w-[95vw] p-0 rounded-2xl border-none overflow-hidden">
+          <div className="bg-indigo-600 p-6 text-white relative">
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10" onClick={() => setSelectedMessage(null)}>
+              <XCircle className="size-6" />
+            </Button>
+            <div className="flex items-center gap-4">
+              <div className="size-12 bg-white/20 rounded-2xl backdrop-blur-sm flex items-center justify-center">
+                <User className="size-6 text-white" />
               </div>
-              <div className="whitespace-pre-wrap">{selectedMessageData.content}</div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-100 mb-1">Message from</p>
+                <h2 className="text-xl font-black">{selectedMessageData?.fromName}</h2>
+              </div>
+            </div>
+          </div>
+
+          {selectedMessageData && (
+            <div className="p-6 space-y-6">
+              <div className="flex justify-between items-center pb-4 border-b">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subject</p>
+                  <p className="text-lg font-bold text-gray-900">{selectedMessageData.subject}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Received</p>
+                  <p className="text-xs font-bold text-gray-700">{format(new Date(selectedMessageData.timestamp), 'PPP')}</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 text-sm leading-relaxed text-gray-700 min-h-[150px] whitespace-pre-wrap">
+                {selectedMessageData.content}
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <Button className="w-full sm:w-auto h-11 px-8 rounded-xl bg-indigo-600 font-bold" onClick={() => setSelectedMessage(null)}>
+                  Close Message
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -340,3 +383,4 @@ export function Messages() {
     </div>
   );
 }
+

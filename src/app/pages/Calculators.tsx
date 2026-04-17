@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Badge } from '../components/ui/badge';
 import { Calculator, IndianRupee, Percent, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useIsMobile } from '../components/ui/use-mobile';
 
 export function Calculators() {
+  const isMobile = useIsMobile();
   // EMI Calculator State
   const [loanAmount, setLoanAmount] = useState<string>('500000');
   const [interestRate, setInterestRate] = useState<string>('8.5');
@@ -120,17 +122,17 @@ export function Calculators() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isMobile ? 'pb-24' : ''}`}>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Financial Calculators</h1>
+        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>Financial Calculators</h1>
         <p className="text-gray-500 mt-1">
           Calculate EMI and FOIR to assess loan affordability and eligibility
         </p>
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'md:grid-cols-2 gap-6'}`}>
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -162,14 +164,14 @@ export function Calculators() {
 
       {/* Calculators */}
       <Tabs defaultValue="emi" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="emi">
+        <TabsList className={isMobile ? 'w-full flex' : ''}>
+          <TabsTrigger value="emi" className={isMobile ? 'flex-1' : ''}>
             <Calculator className="size-4 mr-2" />
-            EMI Calculator
+            EMI
           </TabsTrigger>
-          <TabsTrigger value="foir">
+          <TabsTrigger value="foir" className={isMobile ? 'flex-1' : ''}>
             <Percent className="size-4 mr-2" />
-            FOIR Calculator
+            FOIR
           </TabsTrigger>
         </TabsList>
 
@@ -194,7 +196,7 @@ export function Calculators() {
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(e.target.value)}
                     placeholder="Enter loan amount"
-                    className="text-lg"
+                    className="text-lg h-12"
                   />
                   <p className="text-sm text-gray-500">{formatCurrency(parseFloat(loanAmount) || 0)}</p>
                 </div>
@@ -211,7 +213,7 @@ export function Calculators() {
                     value={interestRate}
                     onChange={(e) => setInterestRate(e.target.value)}
                     placeholder="Enter interest rate"
-                    className="text-lg"
+                    className="text-lg h-12"
                   />
                 </div>
 
@@ -220,21 +222,21 @@ export function Calculators() {
                     <Calendar className="size-4" />
                     Loan Tenure
                   </Label>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Input
                       id="loanTenure"
                       type="number"
                       value={loanTenure}
                       onChange={(e) => setLoanTenure(e.target.value)}
                       placeholder="Enter tenure"
-                      className="text-lg flex-1"
+                      className="text-lg flex-1 h-12"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                       <Button
                         type="button"
                         variant={tenureType === 'months' ? 'default' : 'outline'}
                         onClick={() => setTenureType('months')}
-                        className="px-6"
+                        className="flex-1 px-6 h-12"
                       >
                         Months
                       </Button>
@@ -242,7 +244,7 @@ export function Calculators() {
                         type="button"
                         variant={tenureType === 'years' ? 'default' : 'outline'}
                         onClick={() => setTenureType('years')}
-                        className="px-6"
+                        className="flex-1 px-6 h-12"
                       >
                         Years
                       </Button>
@@ -343,7 +345,7 @@ export function Calculators() {
                     value={monthlyIncome}
                     onChange={(e) => setMonthlyIncome(e.target.value)}
                     placeholder="Enter monthly income"
-                    className="text-lg"
+                    className="text-lg h-12"
                   />
                   <p className="text-sm text-gray-500">{formatCurrency(parseFloat(monthlyIncome) || 0)}</p>
                 </div>
@@ -359,7 +361,7 @@ export function Calculators() {
                     value={existingEmi}
                     onChange={(e) => setExistingEmi(e.target.value)}
                     placeholder="Enter existing EMI"
-                    className="text-lg"
+                    className="text-lg h-12"
                   />
                   <p className="text-sm text-gray-500">Monthly payments on existing loans</p>
                 </div>
@@ -375,7 +377,7 @@ export function Calculators() {
                     value={proposedEmi}
                     onChange={(e) => setProposedEmi(e.target.value)}
                     placeholder="Enter proposed EMI"
-                    className="text-lg"
+                    className="text-lg h-12"
                   />
                   <p className="text-sm text-gray-500">EMI for the new loan you're applying for</p>
                 </div>
@@ -391,7 +393,7 @@ export function Calculators() {
                     value={otherObligations}
                     onChange={(e) => setOtherObligations(e.target.value)}
                     placeholder="Enter other obligations"
-                    className="text-lg"
+                    className="text-lg h-12"
                   />
                   <p className="text-sm text-gray-500">Credit card bills, rent, etc.</p>
                 </div>

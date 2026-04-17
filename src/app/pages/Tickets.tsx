@@ -10,13 +10,15 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AlertCircle, CheckCircle2, Clock, MessageSquare, Plus, Send, Ticket as TicketIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, MessageSquare, Plus, Send, Ticket as TicketIcon, User, Building2, Calendar } from 'lucide-react';
 import { Ticket, TicketComment } from '../types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useIsMobile } from '../components/ui/use-mobile';
 
 export function Tickets() {
   const { currentUser } = useAuth();
+  const isMobile = useIsMobile();
   const { tickets, loanApplications, users, addTicket, updateTicket, addTicketComment } = useData();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -153,22 +155,22 @@ export function Tickets() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Support Tickets</h1>
-          <p className="text-gray-500 mt-1">
-            Connect with bank managers for updates and document requests
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Support Tickets</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1">
+            Connect with bank managers for updates
           </p>
         </div>
         {canCreateTicket && (
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+              <Button className="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-11 md:h-10">
                 <Plus className="size-4 mr-2" />
                 Create Ticket
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[95vw] md:max-w-2xl rounded-2xl">
               <DialogHeader>
                 <DialogTitle>Create Support Ticket</DialogTitle>
                 <DialogDescription>
@@ -270,54 +272,54 @@ export function Tickets() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Open Tickets</CardTitle>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <Card className="rounded-2xl border-none shadow-sm bg-blue-50">
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Open</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{groupedTickets.open.length}</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-blue-700">{groupedTickets.open.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">In Progress</CardTitle>
+        <Card className="rounded-2xl border-none shadow-sm bg-purple-50">
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs font-semibold text-purple-600 uppercase tracking-wider">Active</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{groupedTickets.in_progress.length}</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-purple-700">{groupedTickets.in_progress.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Resolved</CardTitle>
+        <Card className="rounded-2xl border-none shadow-sm bg-green-50">
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs font-semibold text-green-600 uppercase tracking-wider">Solved</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{groupedTickets.resolved.length}</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-green-700">{groupedTickets.resolved.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Tickets</CardTitle>
+        <Card className="rounded-2xl border-none shadow-sm bg-gray-50">
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{filteredTickets.length}</div>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-gray-700">{filteredTickets.length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Tickets List */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-2xl border-none shadow-sm">
+        <CardHeader className="p-4 md:p-6">
           <CardTitle>All Tickets</CardTitle>
           <CardDescription>View and manage support tickets</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6">
           <Tabs defaultValue="all" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="all">All ({filteredTickets.length})</TabsTrigger>
-              <TabsTrigger value="open">Open ({groupedTickets.open.length})</TabsTrigger>
-              <TabsTrigger value="in_progress">In Progress ({groupedTickets.in_progress.length})</TabsTrigger>
-              <TabsTrigger value="resolved">Resolved ({groupedTickets.resolved.length})</TabsTrigger>
+            <TabsList className="w-full justify-start overflow-x-auto bg-gray-100/50 p-1 rounded-xl">
+              <TabsTrigger value="all" className="rounded-lg">All ({filteredTickets.length})</TabsTrigger>
+              <TabsTrigger value="open" className="rounded-lg">Open</TabsTrigger>
+              <TabsTrigger value="in_progress" className="rounded-lg text-xs md:text-sm">In Progress</TabsTrigger>
+              <TabsTrigger value="resolved" className="rounded-lg">Resolved</TabsTrigger>
             </TabsList>
 
             {['all', 'open', 'in_progress', 'resolved'].map((tab) => (
@@ -332,39 +334,41 @@ export function Tickets() {
                     {(tab === 'all' ? filteredTickets : groupedTickets[tab as keyof typeof groupedTickets]).map((ticket) => (
                       <Dialog key={ticket.id}>
                         <DialogTrigger asChild>
-                          <div className="border rounded-lg p-4 hover:border-indigo-300 cursor-pointer transition-colors bg-white">
-                            <div className="flex items-start justify-between mb-2">
+                          <div className="border rounded-xl p-4 hover:border-indigo-300 cursor-pointer transition-all bg-white shadow-sm active:scale-[0.98]">
+                            <div className="flex items-start justify-between mb-3">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Badge className={`${getStatusColor(ticket.status)} text-white`}>
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <Badge className={`${getStatusColor(ticket.status)} text-white border-none text-[10px] md:text-xs`}>
                                     {getStatusIcon(ticket.status)}
                                     <span className="ml-1">{ticket.status.replace('_', ' ')}</span>
                                   </Badge>
-                                  <Badge className={`${getPriorityColor(ticket.priority)} text-white`}>
+                                  <Badge className={`${getPriorityColor(ticket.priority)} text-white border-none text-[10px] md:text-xs`}>
                                     {ticket.priority}
                                   </Badge>
-                                  <Badge variant="outline">{ticket.category.replace('_', ' ')}</Badge>
                                 </div>
-                                <h4 className="font-semibold text-lg text-gray-900">{ticket.title}</h4>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Application: {ticket.applicationId} - {ticket.applicantName}
-                                </p>
+                                <h4 className="font-bold text-base md:text-lg text-gray-900 leading-tight">{ticket.title}</h4>
+                                <div className="flex items-center gap-1.5 text-xs text-indigo-600 font-medium mt-1">
+                                  <TicketIcon className="size-3" />
+                                  <span>{ticket.applicationId}</span>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between text-xs text-gray-500 mt-3">
-                              <div className="flex items-center gap-4">
-                                <span>Created by: {ticket.createdByName}</span>
-                                {ticket.assignedToName && <span>Assigned to: {ticket.assignedToName}</span>}
-                                <span className="flex items-center gap-1">
-                                  <MessageSquare className="size-3" />
-                                  {ticket.comments.length} comments
-                                </span>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 text-[11px] md:text-xs text-gray-500 border-t pt-3">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                <span className="flex items-center gap-1"><User className="size-3" /> {ticket.createdByName}</span>
+                                {ticket.assignedToName && <span className="flex items-center gap-1"><Building2 className="size-3" /> {ticket.assignedToName}</span>}
                               </div>
-                              <span>{format(new Date(ticket.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                              <div className="flex items-center justify-between w-full md:w-auto">
+                                <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full">
+                                  <MessageSquare className="size-3" />
+                                  {ticket.comments.length}
+                                </span>
+                                <span className="flex items-center gap-1"><Calendar className="size-3" /> {format(new Date(ticket.createdAt), 'MMM d')}</span>
+                              </div>
                             </div>
                           </div>
                         </DialogTrigger>
-                        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                        <DialogContent className="w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-4 md:p-6">
                           <DialogHeader>
                             <div className="flex items-center gap-2 mb-2">
                               <Badge className={`${getStatusColor(ticket.status)} text-white`}>

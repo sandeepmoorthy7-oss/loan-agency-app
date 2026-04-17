@@ -9,12 +9,14 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Megaphone, Plus, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { Megaphone, Plus, AlertCircle, Info, AlertTriangle, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useIsMobile } from '../components/ui/use-mobile';
 
 export function Announcements() {
   const { currentUser } = useAuth();
+  const isMobile = useIsMobile();
   const { announcements, addAnnouncement } = useData();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -68,25 +70,25 @@ export function Announcements() {
   const isOwner = currentUser?.role === 'owner';
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-2xl p-8 text-white shadow-xl">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6 pb-20 md:pb-6">
+      <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-2xl p-6 md:p-8 text-white shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <Megaphone className="size-8" />
+            <h2 className="text-2xl md:text-3xl font-bold mb-1 flex items-center gap-3">
+              <Megaphone className="size-6 md:size-8" />
               Announcements
             </h2>
-            <p className="text-white/90 text-lg">Important updates and notifications</p>
+            <p className="text-white/90 text-sm md:text-lg">Important updates and notifications</p>
           </div>
           {isOwner && (
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-white text-purple-600 hover:bg-white/90">
+                <Button className="bg-white text-purple-600 hover:bg-white/90 w-full md:w-auto h-11 md:h-10 rounded-xl font-semibold">
                   <Plus className="size-4 mr-2" />
                   New Announcement
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="w-[95vw] md:max-w-lg rounded-2xl p-4 md:p-6">
                 <DialogHeader>
                   <DialogTitle>Create Announcement</DialogTitle>
                 </DialogHeader>
@@ -144,9 +146,9 @@ export function Announcements() {
         </div>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         {announcements.length === 0 ? (
-          <Card className="border-2 border-dashed">
+          <Card className="border-2 border-dashed rounded-2xl">
             <CardContent className="flex flex-col items-center justify-center py-12 text-gray-500">
               <Megaphone className="size-12 mb-4 text-gray-400" />
               <p>No announcements yet</p>
@@ -156,37 +158,42 @@ export function Announcements() {
           announcements.map((announcement) => (
             <Card
               key={announcement.id}
-              className="hover:shadow-lg transition-shadow border-l-4"
-              style={{
-                borderLeftColor:
-                  announcement.priority === 'high'
-                    ? '#ef4444'
-                    : announcement.priority === 'medium'
-                    ? '#f59e0b'
-                    : '#10b981',
-              }}
+              className="hover:shadow-md transition-all border-none shadow-sm rounded-2xl overflow-hidden"
             >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge className={`${getPriorityColor(announcement.priority)} border-2`}>
+              <div
+                className="h-1.5 w-full"
+                style={{
+                  backgroundColor:
+                    announcement.priority === 'high'
+                      ? '#ef4444'
+                      : announcement.priority === 'medium'
+                      ? '#f59e0b'
+                      : '#10b981',
+                }}
+              />
+              <CardHeader className="p-4 md:p-6 pb-2">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Badge className={`${getPriorityColor(announcement.priority)} border-none text-[10px] md:text-xs px-2 py-0.5`}>
+                      <span className="flex items-center gap-1">
                         {getPriorityIcon(announcement.priority)}
-                        <span className="ml-1">{announcement.priority.toUpperCase()}</span>
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        {format(new Date(announcement.createdAt), 'PPP p')}
+                        {announcement.priority.toUpperCase()}
                       </span>
-                    </div>
-                    <CardTitle className="text-xl">{announcement.title}</CardTitle>
+                    </Badge>
+                    <span className="text-[10px] md:text-xs text-gray-400 flex items-center gap-1">
+                      <Calendar className="size-3" />
+                      {format(new Date(announcement.createdAt), isMobile ? 'MMM d, h:mm a' : 'PPP p')}
+                    </span>
                   </div>
+                  <CardTitle className="text-lg md:text-xl font-bold text-gray-900">{announcement.title}</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 mb-4 whitespace-pre-wrap">{announcement.message}</p>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+              <CardContent className="p-4 md:p-6 pt-0">
+                <p className="text-gray-600 mb-4 whitespace-pre-wrap text-sm md:text-base leading-relaxed">{announcement.message}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-400 border-t pt-3">
+                  <User className="size-3.5" />
                   <span>Posted by:</span>
-                  <Badge variant="outline">{announcement.createdByName}</Badge>
+                  <span className="font-semibold text-gray-600">{announcement.createdByName}</span>
                 </div>
               </CardContent>
             </Card>

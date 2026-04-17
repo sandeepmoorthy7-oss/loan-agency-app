@@ -30,13 +30,15 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
-import { UserCheck, UserX, Eye, Search, Filter, Clock, CheckCircle, XCircle } from "lucide-react";
+import { UserCheck, UserX, Eye, Search, Filter, Clock, CheckCircle, XCircle, User, Mail, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { PendingUserApplication } from "../types";
+import { useIsMobile } from "../components/ui/use-mobile";
 
 export function MemberApplications() {
   const { currentUser } = useAuth();
+  const isMobile = useIsMobile();
   const { pendingUserApplications, reviewUserApplication, refreshData } = useData();
   const [selectedApp, setSelectedApp] = useState<PendingUserApplication | null>(null);
 
@@ -148,77 +150,76 @@ export function MemberApplications() {
   const rejectedCount = pendingUserApplications.filter(app => app.status === "rejected").length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 pb-20 md:pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Member Applications</h2>
-          <p className="text-gray-500">Review and approve new member registration requests</p>
+          <h2 className="text-2xl font-bold text-gray-900">Member Applications</h2>
+          <p className="text-sm text-gray-500">Review and approve new registration requests</p>
         </div>
         <Button onClick={() => {
           console.log("DEBUG: Manual refresh triggered");
           refreshData();
-        }} variant="outline" size="sm">
+        }} variant="outline" size="sm" className="h-10">
           Refresh Data
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <Card className="rounded-2xl border-none shadow-sm bg-yellow-50">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Pending Review</p>
-                <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
+                <p className="text-[10px] font-semibold text-yellow-600 uppercase tracking-wider">Pending</p>
+                <p className="text-2xl font-bold text-yellow-700">{pendingCount}</p>
               </div>
-              <Clock className="size-8 text-yellow-500" />
+              <Clock className="size-6 text-yellow-500/50" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="rounded-2xl border-none shadow-sm bg-green-50">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{approvedCount}</p>
+                <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wider">Approved</p>
+                <p className="text-2xl font-bold text-green-700">{approvedCount}</p>
               </div>
-              <CheckCircle className="size-8 text-green-500" />
+              <CheckCircle className="size-6 text-green-500/50" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="rounded-2xl border-none shadow-sm bg-red-50 col-span-2 md:col-span-1">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{rejectedCount}</p>
+                <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wider">Rejected</p>
+                <p className="text-2xl font-bold text-red-700">{rejectedCount}</p>
               </div>
-              <XCircle className="size-8 text-red-500" />
+              <XCircle className="size-6 text-red-500/50" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+      <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
               <Input
-                placeholder="Search by name, email, or phone..."
+                placeholder="Search requests..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11 md:h-10 rounded-xl"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="size-4 text-gray-400" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full md:w-[180px] h-11 md:h-10 rounded-xl">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
@@ -230,14 +231,78 @@ export function MemberApplications() {
         </CardContent>
       </Card>
 
-      {/* Applications Table */}
-      <Card>
-        <CardHeader>
+      {/* Applications Table / Mobile List */}
+      <Card className="rounded-2xl border-none shadow-sm">
+        <CardHeader className="p-4 md:p-6">
           <CardTitle>Applications ({filteredApplications.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+        <CardContent className={isMobile ? "p-0" : "p-6 pt-0"}>
+          {isMobile ? (
+            <div className="divide-y border-t">
+              {filteredApplications.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">No applications found</div>
+              ) : (
+                filteredApplications.map((app) => (
+                  <div key={app.id} className="p-4 space-y-3 active:bg-gray-50 transition-colors" onClick={() => {
+                    setSelectedApp(app);
+                    setIsViewDialogOpen(true);
+                  }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold border border-indigo-100">
+                          {app.name[0]}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 leading-tight">{app.name}</h4>
+                          <div className="mt-0.5">{getRoleBadge(app.requestedRole)}</div>
+                        </div>
+                      </div>
+                      <div>{getStatusBadge(app.status)}</div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <Mail className="size-3.5 text-gray-400" />
+                        <span className="truncate">{app.email}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="size-3.5 text-gray-400" />
+                          <span>{format(new Date(app.appliedAt), "MMM dd, yyyy")}</span>
+                        </div>
+                        <span className="text-indigo-600 font-medium">ID: {app.id.slice(0, 8)}...</span>
+                      </div>
+                    </div>
+
+                    {app.status === "pending" && (
+                      <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          className="flex-1 bg-green-600 hover:bg-green-700 h-10 rounded-xl"
+                          onClick={() => handleApprove(app)}
+                        >
+                          <UserCheck className="size-4 mr-2" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1 text-red-600 border-red-200 h-10 rounded-xl"
+                          onClick={() => {
+                            setSelectedApp(app);
+                            setIsRejectDialogOpen(true);
+                          }}
+                        >
+                          <UserX className="size-4 mr-2" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
@@ -312,12 +377,13 @@ export function MemberApplications() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
 
       {/* View Application Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] md:max-w-2xl rounded-2xl overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Application Details - {selectedApp?.id}</DialogTitle>
           </DialogHeader>
@@ -417,7 +483,7 @@ export function MemberApplications() {
 
       {/* Reject Dialog */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] md:max-w-lg rounded-2xl">
           <DialogHeader>
             <DialogTitle>Reject Application</DialogTitle>
             <DialogDescription>
