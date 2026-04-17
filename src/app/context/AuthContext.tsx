@@ -110,6 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Fail-safe: Force loading to stop after 5 seconds no matter what
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.log("DEBUG: Auth timeout reached, forcing loading to stop");
+        setIsLoading(false);
+      }
+    }, 5000);
+
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -117,8 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profile = await getProfile(session.user);
           setCurrentUser(profile);
         }
+      } catch (e) {
+        console.error("DEBUG: Init error:", e);
       } finally {
         setIsLoading(false);
+        clearTimeout(timeout);
       }
     };
     init();
@@ -126,20 +137,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("DEBUG: Auth state changed:", event, session?.user?.email);
 
-      if (session) {
-        const profile = await getProfile(session.user);
-        setCurrentUser(profile);
-      } else {
-        // Handle signed out state
-        setCurrentUser(null);
-        setIsPendingApproval(false);
+      try {
+        if (session) {
+          const profile = await getProfile(session.user);
+          setCurrentUser(profile);
+        } else {
+          setCurrentUser(null);
+          setIsPendingApproval(false);
+        }
+      } catch (e) {
+        console.error("DEBUG: Auth change error:", e);
+      } finally {
+        setIsLoading(false);
+        clearTimeout(timeout);
       }
-
-      // Crucial: ensure loading state is cleared after profile attempt
-      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
