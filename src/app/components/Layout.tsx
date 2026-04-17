@@ -96,26 +96,28 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="px-4 py-2 sm:py-3">
+      {/* Header with Safe Area Support for iOS Notch */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
+        <div className="px-4 py-3 sm:py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-              <img src={logo} alt="TFS Logo" className="h-8 sm:h-10 w-auto" />
-              <div>
-                <h1 className="text-sm sm:text-xl font-bold text-gray-900 leading-tight">TFS HOSUR LOANS</h1>
-                <p className="text-[10px] sm:text-xs font-medium text-indigo-600 uppercase tracking-wider">{getRoleLabel(currentUser?.role || '')}</p>
+              <img src={logo} alt="TFS Logo" className="h-9 sm:h-10 w-auto" />
+              <div className="flex flex-col">
+                <h1 className="text-[13px] sm:text-xl font-bold text-gray-900 leading-none">TFS HOSUR LOANS</h1>
+                <p className="text-[9px] sm:text-xs font-semibold text-indigo-600 uppercase tracking-widest mt-0.5">{getRoleLabel(currentUser?.role || '')}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-4">
-              <NotificationsDropdown />
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="p-1">
+                <NotificationsDropdown />
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-1 sm:px-2 hover:bg-gray-50">
-                    <Avatar className="size-8 border border-indigo-100">
-                      <AvatarFallback className="bg-indigo-600 text-white text-xs">
+                  <Button variant="ghost" className="flex items-center gap-2 p-1 sm:px-2 hover:bg-gray-50 focus:ring-0">
+                    <Avatar className="size-9 border-2 border-indigo-100">
+                      <AvatarFallback className="bg-indigo-600 text-white text-xs font-bold">
                         {currentUser?.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -124,7 +126,7 @@ export function Layout() {
                         <p className="text-sm font-semibold text-gray-700 leading-none">{currentUser?.name}</p>
                       </div>
                     )}
-                    <ChevronDown className="size-4 text-gray-400" />
+                    <ChevronDown className="size-4 text-gray-400 hidden sm:block" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64 p-2">
@@ -184,9 +186,9 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation with Safe Area Support */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-2 py-1 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-around max-w-md mx-auto">
             {mobileMainItems.map((item) => {
               const Icon = item.icon;
@@ -195,18 +197,18 @@ export function Layout() {
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className={`flex flex-col items-center justify-center p-2 min-w-[64px] rounded-xl transition-colors
-                    ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-gray-500 active:bg-gray-50'}`}
+                  className={`flex flex-col items-center justify-center p-2 min-w-[64px] rounded-xl transition-all active:scale-95
+                    ${isActive ? 'text-indigo-600 bg-indigo-50/70' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
                   <div className="relative">
-                    <Icon className={`size-5 mb-1 ${isActive ? 'text-indigo-600' : 'text-gray-500'}`} />
+                    <Icon className={`size-5 mb-1 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
                     {item.badge !== undefined && item.badge > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full size-4 flex items-center justify-center border-2 border-white">
                         {item.badge}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-tight ${isActive ? 'text-indigo-700' : 'text-gray-500'}`}>{item.label}</span>
                 </button>
               );
             })}
