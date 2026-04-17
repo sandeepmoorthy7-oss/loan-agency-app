@@ -161,10 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      // Clear any previous pending state
+      console.log("DEBUG: Login attempt started for:", email);
       setIsPendingApproval(false);
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Force session persistence for mobile devices
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
       if (error) {
         console.error("Login error:", error.message);
@@ -172,7 +176,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.session) {
-        // Fetch profile immediately to return it
+        console.log("DEBUG: Session established, verifying profile...");
+
+        // On iOS/Mobile, sometimes we need to manually set the session
+        // to ensure the internal storage picks it up immediately.
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        });
+
         const profile = await getProfile(data.session.user);
         setCurrentUser(profile);
         return { success: true, profile };
