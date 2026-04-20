@@ -157,8 +157,8 @@ export function Applications() {
   const getFilteredApplications = () => {
     let filtered = loanApplications;
 
-    if (currentUser?.role === "sales") {
-      // Sales can only see their own applications OR unlocked applications
+    // Sales and other Lead Generators can only see their own applications OR unlocked applications
+    if (currentUser?.role === "sales" || currentUser?.role === "backend") {
       filtered = filtered.filter(
         (app) => {
           const isLocked = checkLockStatus(app);
@@ -166,8 +166,9 @@ export function Applications() {
         }
       );
     } else if (currentUser?.role === "bank_manager") {
+      // Bank managers only see applications assigned specifically to them
       filtered = filtered.filter(
-        (app) => app.bank === currentUser.bankId,
+        (app) => app.assignedTo === currentUser.id
       );
     }
 
@@ -239,6 +240,10 @@ export function Applications() {
       (user) => user.id === formData.backendAssignedId,
     );
 
+    // Client Lock Logic: 15 days from now
+    const fifteenDaysFromNow = new Date();
+    fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
+
     addLoanApplication({
       applicantName: formData.applicantName,
       applicantEmail: formData.applicantEmail,
@@ -257,6 +262,8 @@ export function Applications() {
       bankEmployeeName: selectedBankEmployee?.name,
       backendAssignedId: formData.backendAssignedId,
       backendAssignedName: selectedBackendStaff?.name,
+      isLocked: true,
+      lockedUntil: fifteenDaysFromNow.toISOString(),
     });
 
     toast.success("Loan application created successfully!");
@@ -303,7 +310,7 @@ export function Applications() {
     toast.success("Application unlocked successfully");
   };
 
-  const canCreateApplication = currentUser?.role === "sales";
+  const canCreateApplication = currentUser?.role !== "bank_manager";
   const canUpdateStatus =
     currentUser?.role === "owner" ||
     currentUser?.role === "bank_manager" ||

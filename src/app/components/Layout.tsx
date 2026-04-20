@@ -96,19 +96,19 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header with Safe Area Support for iOS Notch */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
-        <div className="px-4 py-3 sm:py-3">
-          <div className="flex items-center justify-between">
+      {/* Header with Definitive Safe Area Support for iOS */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 pt-[calc(env(safe-area-inset-top,44px)+4px)] pb-3 shadow-sm">
+        <div className="px-4">
+          <div className="flex items-center justify-between h-10 sm:h-12">
             <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-              <img src={logo} alt="TFS Logo" className="h-9 sm:h-10 w-auto" />
+              <img src={logo} alt="TFS Logo" className="h-8 sm:h-10 w-auto" />
               <div className="flex flex-col">
-                <h1 className="text-[13px] sm:text-xl font-bold text-gray-900 leading-none">TFS HOSUR LOANS</h1>
-                <p className="text-[9px] sm:text-xs font-semibold text-indigo-600 uppercase tracking-widest mt-0.5">{getRoleLabel(currentUser?.role || '')}</p>
+                <h1 className="text-[12px] sm:text-xl font-bold text-gray-900 leading-none">TFS HOSUR LOANS</h1>
+                <p className="text-[8px] sm:text-xs font-semibold text-indigo-600 uppercase tracking-widest mt-0.5">{getRoleLabel(currentUser?.role || '')}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1 sm:gap-4">
               <div className="p-1">
                 <NotificationsDropdown />
               </div>
@@ -116,7 +116,7 @@ export function Layout() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 p-1 sm:px-2 hover:bg-gray-50 focus:ring-0">
-                    <Avatar className="size-9 border-2 border-indigo-100">
+                    <Avatar className="size-8 sm:size-9 border-2 border-indigo-100">
                       <AvatarFallback className="bg-indigo-600 text-white text-xs font-bold">
                         {currentUser?.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </AvatarFallback>
@@ -181,8 +181,8 @@ export function Layout() {
         </nav>
       )}
 
-      {/* Main Content */}
-      <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto w-full ${isMobile ? 'pb-24' : ''}`}>
+      {/* Main Content - Added massive top padding for mobile to clear notch/header */}
+      <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto w-full ${isMobile ? 'pt-16 pb-24' : ''}`}>
         <Outlet />
       </main>
 

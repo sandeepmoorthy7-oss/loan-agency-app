@@ -110,6 +110,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // 1. Create a BroadcastChannel to sync logout across tabs
+    const logoutChannel = new BroadcastChannel('auth_logout');
+    logoutChannel.onmessage = (event) => {
+      if (event.data === 'logout') {
+        console.log("DEBUG: Received logout signal from another tab");
+        setCurrentUser(null);
+        setIsPendingApproval(false);
+        window.location.href = '/login';
+      }
+    };
+
     // Fail-safe: Force loading to stop after 5 seconds no matter what
     const timeout = setTimeout(() => {
       if (isLoading) {
@@ -160,15 +171,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    let timeoutId: any;
     try {
       console.log("DEBUG: Login attempt started for:", email);
       setIsPendingApproval(false);
 
-      // Force session persistence for mobile devices
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+      // 1. Brief pause to ensure Capacitor native bridge is ready
+      await new Promise(r => setTimeout(r, 200));
+
+      // 2. Extended timeout for mobile networks (30 seconds)
+      const loginTimeout = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Login timed out. Please check your internet connection and try again.")), 30000);
+      });
+
+      // 3. Race the login against the timeout
+      const loginPromise = supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
         password
       });
+
+      const result: any = await Promise.race([loginPromise, loginTimeout]);
+      const { data, error } = result;
+
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (error) {
         console.error("Login error:", error.message);
@@ -178,20 +203,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.session) {
         console.log("DEBUG: Session established, verifying profile...");
 
-        // On iOS/Mobile, sometimes we need to manually set the session
-        // to ensure the internal storage picks it up immediately.
+        // Ensure session is recognized by the client
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token
         });
 
+        // Fetch profile
         const profile = await getProfile(data.session.user);
+        console.log("DEBUG: Profile fetched:", profile);
+
         setCurrentUser(profile);
         return { success: true, profile };
       }
 
       return { success: false, message: "Failed to establish session." };
     } catch (err: any) {
+      if (timeoutId) clearTimeout(timeoutId);
       console.error("Unexpected login error:", err);
       return { success: false, message: err.message || "An unexpected error occurred" };
     }
@@ -199,15 +227,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // 1. Clear local state first for immediate UI responsiveness
+      console.log("DEBUG: Permanent logout initiated...");
+      // 1. Clear local state first
       setCurrentUser(null);
       setIsPendingApproval(false);
 
-      // 2. Perform the actual sign out
+      // 2. Perform the actual sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) console.error("Supabase signOut error:", error.message);
+
+      // 3. NUCLEAR OPTION: Clear EVERYTHING
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Clear all Cookies
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      // 4. Force a hard redirect to login to break any memory-held sessions
+      window.location.href = '/login';
     } catch (err) {
       console.error("Logout error:", err);
+      window.location.href = '/login';
     }
   };
 

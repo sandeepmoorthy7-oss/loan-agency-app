@@ -335,6 +335,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     fetchPendingUserApplications();
     fetchAttendanceRecords();
 
+    // Re-fetch data when app comes back to foreground or internet is restored
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("DEBUG: App became visible, refreshing data...");
+        refreshData();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log("DEBUG: App focused, refreshing data...");
+      refreshData();
+    };
+
+    const handleOnline = () => {
+      console.log("DEBUG: Internet restored, refreshing data...");
+      refreshData();
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
+
     // Real-time subscriptions
     const channels = [
       supabase.channel('public:messages').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchMessages),
@@ -350,6 +372,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 
