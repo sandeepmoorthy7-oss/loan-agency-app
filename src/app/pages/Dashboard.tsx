@@ -11,12 +11,36 @@ import {
   MessageSquare,
   Megaphone,
   DollarSign,
+  Unlock,
+  ShieldAlert,
+  User,
 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 export function Dashboard() {
   const { currentUser } = useAuth();
-  const { loanApplications, announcements, messages } = useData();
+  const { loanApplications, announcements, messages, reviewUnlockRequest } = useData();
   const navigate = useNavigate();
+
+  // Get all pending unlock requests for the owner
+  const pendingUnlockRequests = loanApplications.flatMap(app =>
+    (app.unlockRequests || [])
+      .filter(req => req.status === 'pending')
+      .map(req => ({
+        ...req,
+        applicationId: app.id,
+        applicantName: app.applicantName,
+        loanAmount: app.loanAmount
+      }))
+  ).sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+
+  const handleReviewUnlock = (appId: string, requestId: string, approved: boolean) => {
+    if (!currentUser) return;
+    reviewUnlockRequest(appId, requestId, approved, currentUser.id, currentUser.name);
+    toast.success(`Unlock request ${approved ? 'approved' : 'rejected'}`);
+  };
 
   // Filter data based on user role
   const getFilteredApplications = () => {
@@ -25,11 +49,8 @@ export function Dashboard() {
     } else if (currentUser?.role === 'sales') {
       return loanApplications.filter((app) => app.createdBy === currentUser.id);
     } else if (currentUser?.role === 'bank_manager') {
-      // If user has a bankId, filter by it, otherwise use the 'bank' string field
-      return loanApplications.filter((app) =>
-        (currentUser.bankId && app.bank === currentUser.bankId) ||
-        (!currentUser.bankId && app.bank === currentUser.bankId)
-      );
+      // Bank managers only see applications assigned specifically to them
+      return loanApplications.filter((app) => app.assignedTo === currentUser.id);
     }
     return [];
   };
@@ -192,6 +213,79 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Owner-only: Pending Unlock Requests */}
+      {currentUser?.role === 'owner' && pendingUnlockRequests.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-orange-100 p-1.5 rounded-lg">
+                <ShieldAlert className="size-5 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Pending Unlock Requests</h3>
+            </div>
+            <Badge className="bg-orange-500 hover:bg-orange-600 border-none px-3">
+              {pendingUnlockRequests.length} ACTION REQUIRED
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {pendingUnlockRequests.map((request) => (
+              <Card key={request.id} className="border-none shadow-sm overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="flex flex-col sm:flex-row items-stretch">
+                    <div className="p-4 sm:p-5 flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex items-center gap-3 min-w-[200px]">
+                        <div className="size-10 bg-indigo-50 rounded-full flex items-center justify-center shrink-0">
+                          <User className="size-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{request.requestedByName}</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Requesting Access</p>
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:block w-px h-8 bg-gray-100"></div>
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-mono font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 uppercase">APP #{request.applicationId.slice(0, 8)}</span>
+                          <span className="text-xs font-bold text-gray-700">For {request.applicantName}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 italic line-clamp-1">"{request.reason}"</p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(new Date(request.requestedAt), 'MMM dd, HH:mm')}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 sm:p-5 flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-100">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold"
+                        onClick={() => handleReviewUnlock(request.applicationId, request.id, false)}
+                      >
+                        <XCircle className="size-4 mr-2" />
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                        onClick={() => handleReviewUnlock(request.applicationId, request.id, true)}
+                      >
+                        <Unlock className="size-4 mr-2" />
+                        Approve
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
