@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { router } from './routes';
 import { Toaster } from './components/ui/sonner';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function AppContent() {
   const { isLoading } = useAuth();
@@ -30,6 +31,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AppContent />
+      <SpeedInsights />
     </AuthProvider>
   );
 }
